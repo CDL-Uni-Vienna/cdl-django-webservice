@@ -505,3 +505,45 @@ class UserUpdateView(generics.UpdateAPIView):
         IsAuthenticated,
         UpdateOwnProfile,
     ]
+
+
+class SimulatorApiView(generics.ListCreateAPIView):
+    """
+    This view returns all existing Experiment objects to the super user
+    and all Experiments that belong to the authenticated user for end user
+    """
+
+    # a QuerySet can be constructed, filtered, sliced, and generally passed
+    # around without actually hitting the database. No database activity
+    # actually occurs until you do something to evaluate the queryset
+    queryset = models.Experiment.objects.all()
+    serializer_class = serializers.ExperimentSerializer
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    def list(self, request):
+        # Note the use of `get_queryset()` instead of `self.queryset`
+        if request.user.is_staff:
+            queryset = self.get_queryset()
+        else:
+            queryset = models.Experiment.objects.filter(user=request.user)
+        serializer = serializers.ExperimentSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # need to overwrite create to save user to experiment
+    # user=request.user is what the standard method doesn't do
+    def create(self, request):
+        data = request.data
+        # overwrites status field in view
+        # cleaner alternative: set default in model
+        # leave for now
+        data["status"] = "IN QUEUE"
+        serializer = serializers.ExperimentSerializer(data=data)
+        # print(request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            # print(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response("Invalid data.", status=status.HTTP_400_BAD_REQUEST)

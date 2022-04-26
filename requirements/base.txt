@@ -4,3 +4,5 @@ djangorestframework==3.12.4
 wagtail-bifrost==3.0.1
 django-rest-knox==4.1.0
 django-cors-headers==3.11
+qutip==4.6.3
+qutip-qip==0.2.1
